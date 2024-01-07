@@ -20,9 +20,9 @@ def findStationIndex(stationFreq:float, listOfStations:list):
 
 def run(player: Instance):
     while True:
-            player.play()
-            sleep(9)
-            player.stop()
+        player.play()
+        sleep(9)
+        player.stop()
 class SingleSoundThread:
     def __init__(self, path:str):
 
@@ -44,14 +44,21 @@ class RadioPlayer:
         self.currentFreqOfSimulation:float = defFreq
         self.currentStation = findStationIndex(defFreq, self.stations)
         self.realFreqOfRadiostation = self.getRealFrequencyOfRadioStation(self.currentStation)
+
         self.minFreq = minFreq
         self.maxFreq = maxFreq
         self.radiostationVolume = defVolume
-        self.radiostationPlayer = MediaPlayer(self.getCurrentStationAddress())
+
+        self.radiostationInstance = Instance()
+        self.media = self.radiostationInstance.media_new(self.getCurrentStationAddress())
+        self.radiostationPlayer = self.radiostationInstance.media_player_new()
+        self.radiostationPlayer.set_media(self.media)
+        
         
         self.noisePlayer = SingleSoundThread(noisePath)
         self.changeVolume(self.radiostationVolume)
         self.playRadio()
+        self.noisePlayer.start()
         
 
     def __str__(self):
@@ -65,27 +72,29 @@ class RadioPlayer:
 
     def changeStation(self, freq: float):
         if(self.changeCurrentFreqOfSimulation(freq)): return
-        prevListFreq = nextListFreq = 0
+        prevListFreq = nextListFreq = -1
 
         if self.currentStation - 1 > 0:
             prevListFreq = self.getRealFrequencyOfRadioStation(self.currentStation - 1)
         if self.currentStation + 1 < len(self.stations):
             nextListFreq = self.getRealFrequencyOfRadioStation(self.currentStation + 1)
 
-        if abs(self.currentFreqOfSimulation - prevListFreq) < abs(self.currentFreqOfSimulation - self.realFreqOfRadiostation) and prevListFreq != 0:
+        difference = round(abs(self.currentFreqOfSimulation - self.realFreqOfRadiostation),1)
+        if (round(abs(self.currentFreqOfSimulation - prevListFreq),1) < difference and difference<=0.1) and prevListFreq>=0:
             self.currentStation = self.currentStation - 1
             self.realFreqOfRadiostation = self.getRealFrequencyOfRadioStation(self.currentStation)
-        if abs(self.currentFreqOfSimulation - nextListFreq) < abs(self.currentFreqOfSimulation - self.realFreqOfRadiostation) and nextListFreq != 0:
+        elif (round(abs(self.currentFreqOfSimulation - nextListFreq),1) < difference and difference<=0.1) and nextListFreq>=0:
             self.currentStation = self.currentStation + 1
             self.realFreqOfRadiostation = self.getRealFrequencyOfRadioStation(self.currentStation)
 
-        difference = abs(self.realFreqOfRadiostation - self.currentFreqOfSimulation)
+        difference = round(abs(self.currentFreqOfSimulation - self.realFreqOfRadiostation),1)
         if difference <= 0.1:
             self.stopRadio()
-            self.radiostationPlayer = MediaPlayer(self.getCurrentStationAddress())  
-            self.playRadio()
+            self.setRadiostation()
+            self.changeVolume(self.radiostationVolume)
 
-        self.changeVolume(self.radiostationVolume)
+        if self.radiostationIsPlaying() == False:
+            self.radiostationPlayer.play()
 
     def changeVolume(self, value: int):
         if value < 0 or value > 100: return
@@ -93,7 +102,7 @@ class RadioPlayer:
         self.radiostationVolume = value
         difference = abs(self.realFreqOfRadiostation - self.currentFreqOfSimulation)
         if difference == 0.1:
-            self.radiostationPlayer.audio_set_volume(floor(0.5 * self.radiostationVolume))
+            self.radiostationPlayer.audio_set_volume(floor(0.3 * self.radiostationVolume))
             self.noisePlayer.player.audio_set_volume(floor(0.7 * self.radiostationVolume))
         elif difference == 0:
             self.radiostationPlayer.audio_set_volume(self.radiostationVolume)
@@ -115,11 +124,15 @@ class RadioPlayer:
         return self.stations[self.currentStation][1][1]
     
     def stopRadio(self):
-        self.radiostationPlayer.stop()
-        self.noisePlayer.player.stop()
+        self.radiostationPlayer.pause()
+        self.noisePlayer.player.pause()
 
     def playRadio(self):
         self.radiostationPlayer.play()
         self.noisePlayer.player.play()
 
-
+    def setRadiostation(self):
+        self.radiostationInstance = Instance()
+        self.media = self.radiostationInstance.media_new(self.getCurrentStationAddress())
+        self.radiostationPlayer = self.radiostationInstance.media_player_new()
+        self.radiostationPlayer.set_media(self.media)

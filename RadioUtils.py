@@ -1,16 +1,17 @@
-from vlc import MediaPlayer, Instance
+from vlc import MediaPlayer
 from math import floor
-import threading
-from time import sleep
 from csv import reader
 from pygame import mixer
 
-def loadStations(path:str) -> list:  
+
+def loadStations(path:str) -> list: 
+    '''Returns list of elements from csv file which path is given in path:str.''' 
     with open(path) as csv_file:
         return list(enumerate(reader(csv_file),1))
 
 def findStationIndex(stationFreq:float, listOfStations:list):
-
+    '''Return index of the element from listOfStations based on stationFreq given where 
+    stationFreq matches the most freq from list'''
     minIndex = 0 
     minDiff = 100
     for index, element in enumerate(listOfStations):
@@ -19,9 +20,11 @@ def findStationIndex(stationFreq:float, listOfStations:list):
             minDiff = abs(stationFreq - float(element[1][2]))
 
     return minIndex
-
-
-
+#Initializing mixer from pygame to play radio noise
+mixer.init()
+sound = mixer.Sound('radio_control_files\\radio_noise.mp3')
+sound.set_volume(0)
+sound.play(loops=-1)
 
 class RadioPlayer:
     def __init__(self, stationsPath:str, noisePath:str, defFreq:float, defVolume:int, minFreq:float, maxFreq:float, isSelected: bool):
@@ -29,7 +32,7 @@ class RadioPlayer:
         self.currentFreqOfSimulation:float = defFreq
         self.currentStation = findStationIndex(defFreq, self.stations)
         self.prevStation = -1
-        self.isSelected = True
+        self.isSelected = isSelected
         self.realFreqOfRadiostation = self.getRealFrequencyOfRadioStation(self.currentStation)
 
         self.minFreq = minFreq
@@ -38,11 +41,11 @@ class RadioPlayer:
 
         self.radiostationPlayer = MediaPlayer(self.getCurrentStationAddress())
 
-        mixer.init()
-        self.noisePlayer = mixer.Sound(noisePath)
         
-        self.changeVolume(self.radiostationVolume)
+        self.noisePlayer = sound
+        
         if(self.isSelected):
+            self.changeVolume(self.radiostationVolume)
             self.playRadio()
         else:
             self.stopRadio()
@@ -52,49 +55,44 @@ class RadioPlayer:
         return f'StationFreq: {self.realFreqOfRadiostation}; deviceFreq: {self.currentFreqOfSimulation};Vol: {self.radiostationVolume}; StationVol: {self.radiostationPlayer.audio_get_volume()};noiseVol: {self.noisePlayer.get_volume()}'
     
     def changeCurrentFreqOfSimulation(self, value:float):
+        '''Change currentFreqOfSimulation to value given. Limited by max and min freq of simulation'''
         if self.minFreq <= value <= self.maxFreq:
-            self.currentFreqOfSimulation = value
+            self.currentFreqOfSimulation = round(value,1)
             return 0        
         return 1
 
     def changeStation(self, freq: float):
+        '''Passing desired freq of simulation(from input i.e. button) to configure radio to play in the way it should work'''
         if(self.changeCurrentFreqOfSimulation(freq)): return
         prevListFreq = nextListFreq = -1
-
-        if self.currentStation - 1 >= 0:
-            prevListFreq = self.getRealFrequencyOfRadioStation(self.currentStation - 1)
-        if self.currentStation + 1 < len(self.stations):
-            nextListFreq = self.getRealFrequencyOfRadioStation(self.currentStation + 1)
-
-        difference = round(abs(self.currentFreqOfSimulation - self.realFreqOfRadiostation),1)
-        if (round(abs(self.currentFreqOfSimulation - prevListFreq),1) < difference) and prevListFreq>=0:
+        #finding closest station
+        temp = findStationIndex(self.currentFreqOfSimulation, self.stations)
+        if temp!=self.currentStation:
             self.prevStation = self.currentStation
-            self.currentStation = self.currentStation - 1
+            self.currentStation = temp
             self.realFreqOfRadiostation = self.getRealFrequencyOfRadioStation(self.currentStation)
-        elif (round(abs(self.currentFreqOfSimulation - nextListFreq),1) < difference) and nextListFreq>=0:
-            self.prevStation = self.currentStation
-            self.currentStation = self.currentStation + 1
-            self.realFreqOfRadiostation = self.getRealFrequencyOfRadioStation(self.currentStation)
-
+        
+        #checking distance to closest station
         difference = round(abs(self.currentFreqOfSimulation - self.realFreqOfRadiostation),1)
         
+        #if it is close enough start playing this station
         if difference == 0.2 and self.currentStation!=self.prevStation:
             self.stopRadio()
             self.radiostationPlayer = MediaPlayer(self.getCurrentStationAddress())
-            self.changeVolume(self.radiostationVolume)
             self.playRadio()
-        else:
-            self.changeVolume(self.radiostationVolume)
+        #Takes care of proper volume levels depending on the distance to station
+        self.changeVolume(self.radiostationVolume)
 
 
     def changeVolume(self, value: int):
+        '''Changes volume to fit designed behaviour with noise and radiostation itself'''
         if value < 0 or value > 100: return
         
         self.radiostationVolume = value
         difference = round(abs(self.realFreqOfRadiostation - self.currentFreqOfSimulation),1)
         if difference == 0.1:
             self.radiostationPlayer.audio_set_volume(floor((0.6*self.radiostationVolume)))
-            self.noisePlayer.set_volume(round((0.5*self.radiostationVolume)/100,2))
+            self.noisePlayer.set_volume(round((0.4*self.radiostationVolume)/100,2))
         
         elif difference == 0:
             self.radiostationPlayer.audio_set_volume(self.radiostationVolume)
@@ -102,33 +100,47 @@ class RadioPlayer:
 
         else:
             self.radiostationPlayer.audio_set_volume(0)
-            self.noisePlayer.set_volume(round(self.radiostationVolume/100,2))
+            self.noisePlayer.set_volume(round(0.7*self.radiostationVolume/100,2))
         
     def radiostationIsPlaying(self):
+        '''Check whteher radiostation is currently playing
+            if yes - return True'''
         return self.radiostationPlayer.is_playing()
         
     def getCurrentStationName(self):
+        '''Returns the name of the radiostation given in list stations'''
         return self.stations[self.currentStation][1][0]
  
     def getRealFrequencyOfRadioStation(self, index: int):
+        '''Returns the real frequency of the radiostation given in list stations
+        to make the simulation more realistic'''
         return float(self.stations[index][1][2])
 
     def getCurrentStationAddress(self):
+        '''Returns URL address to be able to play radiostation'''
         return self.stations[self.currentStation][1][1]
     
     def stopRadio(self):
+        '''Stopping radio'''
         self.radiostationPlayer.pause()
-        self.noisePlayer.stop()
 
     def playRadio(self):
+        '''Playing radio'''
         self.radiostationPlayer.play()
-        self.noisePlayer.play(loops=-1)
+        
 
 
-def switchType(toMute:RadioPlayer, toPlay:RadioPlayer, freq:float, vol:int):
+def switchType(toMute:RadioPlayer, toPlay:RadioPlayer, freq:float):
+    '''Function used to toogle between play types keeping configuration the same i.e. Volume
+    Args:
+    toMute (RadioPlayer): Object of the radio which needs to be muted
+    toPlay (RadioPlayer): Object of the radio which needs to be played
+    freq (float): value of the frequency passed as argument which needs to be set for specific type(i.e. FM and AM bandwiths differ)
+    '''
+
     toMute.stopRadio()
     toMute.isSelected = False
     toPlay.changeStation(freq)
-    toPlay.changeVolume(vol)
+    toPlay.changeVolume(toMute.radiostationVolume)
     toPlay.playRadio()
     toPlay.isSelected = True

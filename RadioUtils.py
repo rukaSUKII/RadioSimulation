@@ -27,7 +27,7 @@ sound.set_volume(0)
 sound.play(loops=-1)
 
 class RadioPlayer:
-    def __init__(self, stationsPath:str, noisePath:str, defFreq:float, defVolume:int, minFreq:float, maxFreq:float, isSelected: bool):
+    def __init__(self, stationsPath:str, defFreq:float, defVolume:int, minFreq:float, maxFreq:float, isSelected: bool):
         self.stations = loadStations(stationsPath)
         self.currentFreqOfSimulation:float = defFreq
         self.currentStation = findStationIndex(defFreq, self.stations)

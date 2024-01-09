@@ -54,11 +54,12 @@ class Knob:
         self.angle_limits = angle_limits
         self.position = initial_position
         self.rect = self.image.get_rect(center=self.position)
+        self.sens = 2000
 
     def update_angle(self, mouse_x):
         if self.dragging:
             dx = mouse_x - self.prev_mouse_x
-            rotation_factor = dx / 2000.0
+            rotation_factor = dx / self.sens
             self.angle += 360 * rotation_factor
             self.angle = max(self.angle_limits['min'], min(self.angle, self.angle_limits['max']))
             self.prev_mouse_x = mouse_x
@@ -78,7 +79,7 @@ class RadioApp:
     def __init__(self):
         
         pygame.init()
-        self.width, self.height = 1141, 965
+        self.width, self.height = 1141, 1000
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption("Radio Tuner")
         self.radio_image = pygame.image.load("radio.png").convert_alpha()
@@ -90,6 +91,7 @@ class RadioApp:
             Knob("smallKnob.png", (706, 767), {'min': 140, 'max': 190}, start_angle=140, scale_factor=0.5),
             Knob("smallKnob.png", (978, 768), {'min': 25, 'max': 130}, start_angle=25, scale_factor=0.5)
         ]
+        self.knobs[1].sens = self.knobs[2].sens = 1000
         self.prev_fm_value = 88
         self.prev_volume_value = 0
         self.is_fm = True

@@ -72,10 +72,11 @@ class RadioPlayer:
             self.realFreqOfRadiostation = self.getRealFrequencyOfRadioStation(self.currentStation)
 
         # checking distance to closest station
-        difference = round(abs(self.currentFreqOfSimulation - self.realFreqOfRadiostation), 1)
+        localDifference = round(abs(self.currentFreqOfSimulation - self.realFreqOfRadiostation), 1)
+
 
         # if it is close enough start playing this station
-        if difference == self.difference and self.currentStation != self.prevStation:
+        if localDifference == self.difference and self.currentStation != self.prevStation:
             self.stopRadio()
             self.radiostationPlayer = MediaPlayer(self.getCurrentStationAddress())
             self.playRadio()

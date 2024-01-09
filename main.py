@@ -15,7 +15,7 @@ class Antenna:
         self.rect = pygame.Rect((position[0]-400, position[1]-390), (437, 437))
 
     def update_angle(self, mouse_x):
-        if self.dragging:
+        if self.dragging:   
             dx = mouse_x - self.prev_mouse_x
             rotation_factor = dx / 1000.0
             self.angle += 360 * rotation_factor
@@ -105,7 +105,7 @@ class RadioApp:
                                   minFreq=88,
                                   maxFreq=108,
                                   isSelected=True,
-                                  difference=0.5)
+                                  difference=0.4)
         self.radioAM = rad.RadioPlayer(stationsPath='radio_control_files\RadioAM.csv',
                                   defFreq=55,
                                   defVolume=0,

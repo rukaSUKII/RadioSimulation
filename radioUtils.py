@@ -138,10 +138,9 @@ def switchType(toMute: RadioPlayer, toPlay: RadioPlayer, freq: float):
     toPlay (RadioPlayer): Object of the radio which needs to be played
     freq (float): value of the frequency passed as argument which needs to be set for specific type(i.e. FM and AM bandwiths differ)
     '''
-
     toMute.stopRadio()
     toMute.isSelected = False
     toPlay.changeStation(freq)
     toPlay.changeVolume(toMute.radiostationVolume)
-    toPlay.playRadio()
+    #toPlay.playRadio()
     toPlay.isSelected = True

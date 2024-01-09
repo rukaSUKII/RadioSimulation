@@ -14,7 +14,7 @@ class Antenna:
         self.position = position
         self.rect = pygame.Rect((position[0]-400, position[1]-390), (437, 437))
 
-    def update_angle(self, mouse_x):
+    def updateAngle(self, mouse_x):
         if self.dragging:   
             dx = mouse_x - self.prev_mouse_x
             rotation_factor = dx / 1000.0
@@ -56,7 +56,7 @@ class Knob:
         self.rect = self.image.get_rect(center=self.position)
         self.sens = 2000
 
-    def update_angle(self, mouse_x):
+    def updateAngle(self, mouse_x):
         if self.dragging:
             dx = mouse_x - self.prev_mouse_x
             rotation_factor = dx / self.sens
@@ -64,7 +64,7 @@ class Knob:
             self.angle = max(self.angle_limits['min'], min(self.angle, self.angle_limits['max']))
             self.prev_mouse_x = mouse_x
 
-    def get_mapped_value(self, range_params):
+    def getMappedValue(self, range_params):
         angle_range = self.angle_limits['max'] - self.angle_limits['min']
         mapped_value = ((self.angle - self.angle_limits['min']) / angle_range) * (range_params[1] - range_params[0]) + range_params[0]
         return max(range_params[0], min(range_params[1], round(mapped_value, 1)))
@@ -96,7 +96,7 @@ class RadioApp:
         self.prev_volume_value = 0
         self.is_fm = True
         self.old_is_fm = True
-        self.fmchanged = 0
+        self.fm_changed = 0
         self.clock = pygame.time.Clock()
         self.dot = Dot("dot.png", (910, 802), scale_factor=0.5)
         self.antenna = Antenna("antenka.png", (900, 180), {'min': -85, 'max': -60}, start_angle=-85, scale_factor=0.5)
@@ -118,57 +118,57 @@ class RadioApp:
 
     def run(self):
         while True:
-            self.handle_events()
+            self.handleEvents()
             self.update()
             self.draw()
             self.old_is_fm = self.is_fm
-            if self.knobs[1].get_mapped_value((0, 100)) >= 50:
+            if self.knobs[1].getMappedValue((0, 100)) >= 50:
                 self.is_fm = 0
             else:
                 self.is_fm = 1
 
             if self.is_fm != self.old_is_fm:
                 if self.is_fm == 1:
-                    rad.switchType(self.radioAM, self.radioFM, self.knobs[0].get_mapped_value((88, 108)))
+                    rad.switchType(self.radioAM, self.radioFM, self.knobs[0].getMappedValue((88, 108)))
                 else:
-                    rad.switchType(self.radioFM, self.radioAM, self.knobs[0].get_mapped_value((55, 160)))
+                    rad.switchType(self.radioFM, self.radioAM, self.knobs[0].getMappedValue((55, 160)))
 
-            volume_value = self.knobs[2].get_mapped_value((0, 100))
+            volume_value = self.knobs[2].getMappedValue((0, 100))
 
             if self.is_fm == 1:
-                if self.knobs[0].get_mapped_value((88, 108)) != self.prev_fm_value:
-                    self.print_values(self.knobs[0].get_mapped_value((88, 108)), volume_value)
-                    self.radioFM.changeStation(self.knobs[0].get_mapped_value((88, 108)))
-                self.prev_fm_value = self.knobs[0].get_mapped_value((88, 108))
+                if self.knobs[0].getMappedValue((88, 108)) != self.prev_fm_value:
+                    self.printValues(self.knobs[0].getMappedValue((88, 108)), volume_value)
+                    self.radioFM.changeStation(self.knobs[0].getMappedValue((88, 108)))
+                self.prev_fm_value = self.knobs[0].getMappedValue((88, 108))
             elif self.is_fm == 0:
-                if self.knobs[0].get_mapped_value((55, 160)) != self.prev_fm_value:
-                    self.print_values(self.knobs[0].get_mapped_value((55, 160)), volume_value)
-                    self.radioAM.changeStation(self.knobs[0].get_mapped_value((55, 160)))
-                self.prev_fm_value = self.knobs[0].get_mapped_value((55, 160))
+                if self.knobs[0].getMappedValue((55, 160)) != self.prev_fm_value:
+                    self.printValues(self.knobs[0].getMappedValue((55, 160)), volume_value)
+                    self.radioAM.changeStation(self.knobs[0].getMappedValue((55, 160)))
+                self.prev_fm_value = self.knobs[0].getMappedValue((55, 160))
 
             if volume_value != self.prev_volume_value:
                 if self.is_fm == 1:
-                    self.radioFM.changeVolume(round(self.knobs[2].get_mapped_value((0, 100))))
+                    self.radioFM.changeVolume(round(self.knobs[2].getMappedValue((0, 100))))
                 else:
-                    self.radioAM.changeVolume(round(self.knobs[2].get_mapped_value((0, 100))))
+                    self.radioAM.changeVolume(round(self.knobs[2].getMappedValue((0, 100))))
                 self.prev_volume_value = volume_value
 
             pygame.display.flip()
             self.clock.tick(60)
 
-    def handle_events(self):
+    def handleEvents(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                self.handle_mouse_button_down(event)
+                self.handleMouseButtonDown(event)
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                self.handle_mouse_button_up()
+                self.handleMouseButtonUp()
             elif event.type == pygame.MOUSEMOTION:
-                self.handle_mouse_motion(event)
+                self.handleMouseMotion(event)
 
-    def handle_mouse_button_down(self, event):
+    def handleMouseButtonDown(self, event):
         for knob in self.knobs:
             if knob.rect.collidepoint(event.pos):
                 knob.dragging = True
@@ -178,15 +178,15 @@ class RadioApp:
             self.antenna.dragging = True
             self.antenna.prev_mouse_x = event.pos[1]
 
-    def handle_mouse_button_up(self):
+    def handleMouseButtonUp(self):
         for knob in self.knobs:
             knob.dragging = False
         self.antenna.dragging = False
 
-    def handle_mouse_motion(self, event):
+    def handleMouseMotion(self, event):
         for knob in self.knobs:
-            knob.update_angle(event.pos[0])
-        self.antenna.update_angle(-event.pos[1])
+            knob.updateAngle(event.pos[0])
+        self.antenna.updateAngle(-event.pos[1])
 
     def update(self):
         pass
@@ -198,13 +198,13 @@ class RadioApp:
         temp_surface.blit(self.radio_image, (0, 200))
         for knob in self.knobs:
             knob.draw(temp_surface)
-        if self.knobs[2].get_mapped_value((0, 100)) >= 1:
+        if self.knobs[2].getMappedValue((0, 100)) >= 1:
             self.dot.draw(temp_surface)
 
         # Blit the temporary surface onto the screen
         self.screen.blit(temp_surface, (0, 0))
 
-    def print_values(self, fm_value, volume_value):
+    def printValues(self, fm_value, volume_value):
         band = "FM" if self.is_fm else "AM"
         print(f"{band} Frequency: {fm_value}, Volume: {volume_value}")
 

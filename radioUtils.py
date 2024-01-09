@@ -142,5 +142,4 @@ def switchType(toMute: RadioPlayer, toPlay: RadioPlayer, freq: float):
     toMute.isSelected = False
     toPlay.changeStation(freq)
     toPlay.changeVolume(toMute.radiostationVolume)
-    #toPlay.playRadio()
     toPlay.isSelected = True

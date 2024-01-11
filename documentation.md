@@ -46,3 +46,4 @@ Wymagania Systemowe
 
     System operacyjny: Windows 7 lub nowszy
     Zainstalowany Python3
+    Połączenie internetem
